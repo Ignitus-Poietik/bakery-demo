@@ -1,0 +1,123 @@
+:root {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-heading: 'Fraunces', Georgia, serif;
+  color: #23150f;
+  background: #f6efe4;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* True palette sampled directly from the cake & pastry frames */
+  /* Deep Chocolate & Roasted Cocoa */
+  --espresso: #23150f;
+  --espresso-deep: #160c08;
+  --espresso-muted: #695445;
+
+  /* Golden Brioche, Cake Board Gold & Warm Bronze */
+  --golden-crust: #b87a38;
+  --golden-crust-hover: #966026;
+  --golden-crust-soft: #f5ead8;
+  --golden-accent: #c98842;
+
+  /* Warm Table Sand, Linen & Buttercream */
+  --vanilla-cream: #f6efe4;
+  --vanilla-surface: #ede2d0;
+  --vanilla-card: #fbf7f0;
+  --table-sand: #dbccb9;
+  --sand-linen: #e5d7c3;
+
+  /* Map primary accents to Deep Chocolate & Warm Bronze (no synthetic pink) */
+  --rose-berry: #23150f;
+  --rose-berry-dark: #3a241b;
+  --rose-berry-soft: #ede2d0;
+
+  /* Subtle warm confirmation tones */
+  --status-live: #4a3525;
+  --status-live-soft: #ede2d0;
+  --status-live-border: #d5c4ae;
+  --sage: #4a3525;
+  --sage-soft: #ede2d0;
+
+  --color-ink: var(--espresso);
+  --color-muted: #695445;
+  --color-accent: var(--espresso);
+  --color-accent-dark: var(--rose-berry-dark);
+  --color-accent-soft: var(--vanilla-surface);
+  --color-surface: var(--vanilla-surface);
+  --color-border: rgba(35, 21, 15, 0.1);
+  --color-white: #fbf7f0;
+  --font-display: 'Fraunces', Georgia, serif;
+  --page-width: 1200px;
+  --page-gutter: clamp(20px, 5vw, 72px);
+
+  /* Natural, grounded shadows */
+  --shadow-subtle: 0 1px 2px rgba(35, 21, 15, 0.05);
+  --shadow-card: 0 2px 12px rgba(35, 21, 15, 0.05);
+  --shadow-card-hover: 0 10px 26px rgba(35, 21, 15, 0.09);
+  --shadow-drawer: -12px 0 40px rgba(22, 12, 8, 0.16);
+  --radius-card: 12px;
+  --radius-pill: 9999px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  scroll-behavior: smooth;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--color-ink);
+  background: var(--vanilla-cream);
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  color: inherit;
+}
+
+a {
+  color: inherit;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--golden-crust);
+  outline-offset: 2px;
+}
+
+::selection {
+  color: #fbf7f0;
+  background: var(--espresso);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

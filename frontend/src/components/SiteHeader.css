@@ -1,0 +1,129 @@
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  min-height: 70px;
+  padding: 0 max(6.25%, calc((100% - 1180px) / 2));
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 28px;
+  border-bottom: 1px solid rgba(35, 21, 15, 0.09);
+  background: rgba(246, 239, 228, 0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.brand {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  color: var(--espresso, #23150f);
+  text-decoration: none;
+}
+
+.brand-wordmark {
+  font-family: var(--font-heading, 'Fraunces', Georgia, serif);
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--espresso, #23150f);
+}
+
+.main-nav,
+.header-actions {
+  display: flex;
+  align-items: center;
+}
+
+.main-nav {
+  gap: 32px;
+}
+
+.main-nav a {
+  padding: 8px 0;
+  color: var(--espresso-muted, #695445);
+  font-size: 13px;
+  font-weight: 550;
+  text-decoration: none;
+  transition: color 0.16s ease;
+}
+
+.main-nav a:hover {
+  color: var(--espresso, #23150f);
+}
+
+.header-actions {
+  justify-content: flex-end;
+  gap: 14px;
+}
+
+.open-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 11px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-closed {
+  background: #f5e1de;
+  color: #7d2c23;
+  border: 1px solid #e4c3be;
+}
+
+.bag-button {
+  min-height: 38px;
+  padding: 0 15px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(35, 21, 15, 0.16);
+  border-radius: 8px;
+  background: #fbf7f0;
+  color: var(--espresso, #23150f);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease;
+}
+
+.bag-button:hover {
+  background: #ede2d0;
+  border-color: rgba(35, 21, 15, 0.28);
+}
+
+.bag-count {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 5px;
+  background: var(--espresso, #23150f);
+  color: #fbf7f0;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.closed-banner {
+  padding: 10px 24px;
+  background: #ede2d0;
+  border-bottom: 1px solid rgba(35, 21, 15, 0.1);
+  color: var(--espresso, #23150f);
+  font-size: 12px;
+  text-align: center;
+}
+
+@media (max-width: 720px) {
+  .site-header {
+    grid-template-columns: 1fr auto;
+    min-height: 62px;
+  }
+
+  .main-nav {
+    display: none;
+  }
+}

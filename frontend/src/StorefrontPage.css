@@ -1,0 +1,9 @@
+.storefront-page {
+  min-height: 100vh;
+  overflow: clip;
+  background: var(--vanilla-cream, #fbf6ee);
+}
+
+.storefront-page main {
+  display: block;
+}

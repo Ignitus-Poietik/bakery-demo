@@ -1,0 +1,109 @@
+.hero-stage {
+  position: relative;
+  z-index: 1;
+  height: 360svh;
+  background: var(--vanilla-cream, #f6efe4);
+}
+
+.hero-scene {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100svh;
+  min-height: 560px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #dbccb9;
+  z-index: 1;
+  pointer-events: none;
+  isolation: isolate;
+  will-change: opacity;
+}
+
+.hero-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 1;
+  filter: contrast(1.04) saturate(1.04);
+  image-rendering: -webkit-optimize-contrast;
+  backface-visibility: hidden;
+}
+
+/* Fixed-radius blur overlay whose opacity animates from 0 -> 1 to blur the last frame into the menu without GPU texture thrashing */
+.hero-blur-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  opacity: 0;
+  pointer-events: none;
+  background: rgba(246, 239, 228, 0.78);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  will-change: opacity;
+}
+
+/* Semi-transparent backdrop veil that lets the image show through softly and clears on scroll */
+.hero-intro-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  background: rgba(235, 223, 206, 0.68);
+  backdrop-filter: blur(11px);
+  -webkit-backdrop-filter: blur(11px);
+  will-change: opacity;
+}
+
+.hero-center-content {
+  max-width: 960px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero-wordmark {
+  margin: 0 0 18px;
+  color: #23150f;
+  font-family: var(--font-heading, 'Fraunces', Georgia, serif);
+  font-size: clamp(64px, 11vw, 152px);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 0.96;
+}
+
+.hero-subline {
+  max-width: 580px;
+  margin: 0;
+  color: #4a3525;
+  font-size: clamp(16px, 1.75vw, 22px);
+  font-weight: 450;
+  line-height: 1.5;
+}
+
+@media (max-width: 600px) {
+  .hero-stage {
+    height: 360svh;
+  }
+
+  .hero-intro-veil {
+    padding: 20px;
+  }
+
+  .hero-wordmark {
+    font-size: clamp(48px, 13vw, 76px);
+  }
+
+  .hero-subline {
+    font-size: 15px;
+  }
+}

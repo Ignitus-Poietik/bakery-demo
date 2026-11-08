@@ -1,0 +1,43 @@
+.button-add {
+  min-height: 36px;
+  padding: 0 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--espresso, #23150f);
+  color: #fbf7f0;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.16s ease;
+}
+
+.button-add:hover:not(:disabled) {
+  background: #3a241b;
+}
+
+.button-add:disabled {
+  background: #e5d7c3;
+  color: #8c7a6b;
+  cursor: not-allowed;
+}
+
+:focus-visible {
+  outline: 2px solid var(--golden-crust, #b87a38);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
