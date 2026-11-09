@@ -276,3 +276,19 @@ class BakeryFunctionalPlanTests(TestCase):
         self.assertEqual(confirm_response.status_code, 400)
         saved_order = Order.objects.get(order_reference=order_data["order"]["order_reference"])
         self.assertEqual(saved_order.payment_status, "pending")
+
+    def test_9_manage_site_password_login_and_bearer_token_auth(self):
+        login_res = self.client.post(
+            "/api/manage/login/",
+            data=json.dumps({"password": "bakery2026"}),
+            content_type="application/json",
+        )
+        self.assertEqual(login_res.status_code, 200)
+        token = login_res.json().get("token")
+        self.assertTrue(bool(token))
+
+        orders_res = self.client.get(
+            "/api/orders/",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        self.assertEqual(orders_res.status_code, 200)

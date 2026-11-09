@@ -1,6 +1,10 @@
 from decimal import Decimal
 import urllib.parse
+from django.contrib.auth import get_user_model
 from .models import BakerySettings, Cake, PromoSlide, DEFAULT_DELIVERY_TOWNS
+
+SEEDED_ADMIN_USERNAME = "admin"
+SEEDED_ADMIN_PASSWORD = "bakery2026"
 
 
 def make_cake_svg(title, subtitle, bg_start, bg_end, frosting_color, accent_color):
@@ -220,5 +224,13 @@ def ensure_seeded():
     if PromoSlide.objects.count() == 0:
         for promo in INITIAL_PROMOS:
             PromoSlide.objects.create(**promo)
+
+    User = get_user_model()
+    if not User.objects.filter(username=SEEDED_ADMIN_USERNAME).exists():
+        User.objects.create_superuser(
+            username=SEEDED_ADMIN_USERNAME,
+            email="owner@bigbakery.com",
+            password=SEEDED_ADMIN_PASSWORD,
+        )
 
     return settings_obj

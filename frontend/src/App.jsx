@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import CartDrawer from './components/CartDrawer'
 import CheckoutDialog from './components/CheckoutDialog'
+import ManageSitePage from './components/ManageSitePage'
 import StorefrontPage from './StorefrontPage'
 import './App.css'
 
@@ -109,6 +110,11 @@ export default function App() {
 
   function handleOrderSuccess() {
     setCart([])
+  }
+
+  const pathname = typeof window !== 'undefined' ? window.location.pathname.replace(/\/+$/, '') : ''
+  if (pathname === '/manage-site') {
+    return <ManageSitePage apiBase={API_BASE} onStoreUpdated={loadStore} />
   }
 
   return (
