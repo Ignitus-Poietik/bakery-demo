@@ -138,6 +138,74 @@ PAYSTACK_SECRET_KEY=sk_test_your_secret_key_here
 
 ---
 
+## Production Deployment Guide
+
+This application is ready for production across three complementary services:
+1. **Neon** — Serverless Lakebase PostgreSQL database with connection pooling and automated branching.
+2. **Render** — Django REST Framework backend running on Gunicorn with WhiteNoise static assets and production security hardening.
+3. **Vercel** — React + Vite frontend with global CDN edge routing and client-side SPA rewrites.
+
+### 1. Neon Database Setup
+
+1. In the [Neon Console](https://console.neon.tech/), select your project (e.g. `restless-bread-27904885`) and branch (`production`).
+2. Copy your **Pooled Connection String** (it ends with `-pooler...` and `?sslmode=require`).
+   ```text
+   postgresql://neondb_owner:<password>@ep-mute-paper-b9noacqm-pooler.c-7.eu-central-1.aws.neon.tech/neondb?sslmode=require
+   ```
+3. Database migrations and initial seed data run automatically during Render's build via `backend/build.sh`.
+
+### 2. Render Backend Deployment
+
+1. Create a **New Web Service** on [Render](https://dashboard.render.com/) and connect your GitHub repository:
+   - **Root Directory**: `backend`
+   - **Environment**: `Python 3`
+   - **Build Command**: `./build.sh`
+   - **Start Command**: `gunicorn backend.wsgi:application --bind 0.0.0.0:$PORT`
+   *(Or click "Deploy from Blueprint" using the included [`render.yaml`](render.yaml))*
+2. Configure **Environment Variables** in Render:
+   - `DEBUG`: `False`
+   - `SECRET_KEY`: `<generate-a-strong-random-50-character-secret>`
+   - `DATABASE_URL`: `postgresql://neondb_owner:<password>@...-pooler...neon.tech/neondb?sslmode=require`
+   - `ALLOWED_HOSTS`: `.onrender.com,localhost,127.0.0.1`
+   - `CSRF_TRUSTED_ORIGINS`: `https://*.onrender.com,https://*.vercel.app`
+   - `PAYSTACK_PUBLIC_KEY`: `pk_test_...`
+   - `PAYSTACK_SECRET_KEY`: `sk_test_...`
+3. Deploy the service. Your backend API will be available at `https://<your-render-service>.onrender.com`.
+
+### 3. Vercel Frontend Deployment
+
+1. Import your GitHub repository into [Vercel](https://vercel.com/new).
+2. Configure project settings:
+   - **Framework Preset**: `Vite`
+   - **Root Directory**: `frontend`
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `dist`
+3. Add the **Environment Variable**:
+   - `VITE_API_BASE_URL`: `https://<your-render-service>.onrender.com`
+4. Deploy. Vercel automatically deploys the frontend with client-side SPA routing backed by [`frontend/vercel.json`](frontend/vercel.json).
+
+---
+
+## Security Hardening & Deploy Checks
+
+Django's built-in deployment security verification has been passed with zero issues:
+- `DEBUG = False` enforced in production.
+- `SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')` configured for Render's reverse proxy.
+- `SECURE_SSL_REDIRECT = True` redirects all insecure HTTP traffic to HTTPS.
+- `SESSION_COOKIE_SECURE = True` and `CSRF_COOKIE_SECURE = True` prevent transmission over unencrypted connections.
+- `SECURE_HSTS_SECONDS = 31536000` enforces HTTP Strict Transport Security for 1 year.
+- `X_FRAME_OPTIONS = 'DENY'` and `SECURE_CONTENT_TYPE_NOSNIFF = True` prevent clickjacking and MIME-type sniffing.
+- `WhiteNoise` serves and compresses production static files with cache-busting hashes.
+
+Run the production security audit locally:
+```powershell
+python scratch/test_deploy_check.py
+# Or:
+# $env:DEBUG="False"; python backend/manage.py check --deploy
+```
+
+---
+
 ## Testing & Production Build
 
 ### Run Backend Tests

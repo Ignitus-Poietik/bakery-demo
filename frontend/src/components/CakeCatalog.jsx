@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import './CakeCatalog.css'
 import Icon from './Icon'
+import { resolveMediaUrl } from '../utils/media'
 
 const money = (value) => new Intl.NumberFormat('en-GH', {
   style: 'currency',
@@ -12,7 +13,7 @@ function CakeCard({ cake, quantity, orderingOpen, onQuantityChange, onAdd }) {
     <article className={`cake-card${cake.is_available ? '' : ' is-sold-out'}`}>
       <div className="cake-card-image-wrap">
         {cake.image_url
-          ? <img className="cake-card-image" src={cake.image_url} alt={cake.name} loading="lazy" />
+          ? <img className="cake-card-image" src={resolveMediaUrl(cake.image_url)} alt={cake.name} loading="lazy" />
           : <div className="cake-image-placeholder" aria-hidden="true">CAKE</div>}
         {cake.badge && <span className="cake-card-badge">{cake.badge}</span>}
         {!cake.is_available && <span className="cake-sold-out">Sold out</span>}

@@ -1,5 +1,6 @@
 import './CartDrawer.css'
 import Icon from './Icon'
+import { resolveMediaUrl } from '../utils/media'
 
 const money = (value) => new Intl.NumberFormat('en-GH', {
   style: 'currency',
@@ -48,7 +49,7 @@ export default function CartDrawer({
                 {cartItems.map((item) => (
                   <article className="cart-line" key={item.cake_id}>
                     <div className="cart-line-image">
-                      {item.cake?.image_url && <img src={item.cake.image_url} alt="" />}
+                      {item.cake?.image_url && <img src={resolveMediaUrl(item.cake.image_url)} alt="" />}
                     </div>
                     <div className="cart-line-main">
                       <div className="cart-line-top">

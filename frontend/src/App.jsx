@@ -6,7 +6,11 @@ import ManageSitePage from './components/ManageSitePage'
 import StorefrontPage from './StorefrontPage'
 import './App.css'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
+const API_BASE = (
+  import.meta.env.VITE_API_BASE_URL ||
+  import.meta.env.VITE_API_URL ||
+  ''
+).replace(/\/+$/, '')
 
 async function fetchStoreData() {
   const response = await fetch(`${API_BASE}/api/bootstrap/`)

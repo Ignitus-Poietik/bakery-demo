@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'react-hot-toast'
+import { resolveMediaUrl } from '../utils/media'
 import './ManageSitePage.css'
 
 const TOKEN_STORAGE_KEY = 'big_bakery_manage_token'
@@ -930,7 +931,7 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                       {cakeForm.image_url && (
                         <div className="manage-photo-preview-wrap">
                           <div className="manage-photo-preview-card">
-                            <img src={cakeForm.image_url} alt="Cake preview" />
+                            <img src={resolveMediaUrl(cakeForm.image_url, apiBase)} alt="Cake preview" />
                             <button
                               type="button"
                               className="manage-photo-clear-btn"
@@ -1006,7 +1007,11 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                 {filteredCakes.map((cake) => (
                   <article key={cake.id} className={`manage-cake-row ${!cake.is_available ? 'sold-out' : ''}`}>
                     <div className="manage-cake-thumb">
-                      {cake.image_url ? <img src={cake.image_url} alt={cake.name} /> : <span>{cake.name[0]}</span>}
+                      {cake.image_url ? (
+                        <img src={resolveMediaUrl(cake.image_url, apiBase)} alt={cake.name} />
+                      ) : (
+                        <span>{cake.name[0]}</span>
+                      )}
                     </div>
                     <div className="manage-cake-info">
                       <div className="manage-cake-title-line">
