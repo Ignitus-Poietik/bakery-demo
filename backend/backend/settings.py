@@ -174,10 +174,10 @@ STORAGES = {
 
 # CORS & CSRF Configuration
 CSRF_TRUSTED_ORIGINS = [
-    origin.strip()
+    origin.strip().rstrip('/')
     for origin in os.environ.get(
         'CSRF_TRUSTED_ORIGINS',
-        'http://localhost:5173,http://127.0.0.1:5173,https://*.onrender.com,https://*.vercel.app'
+        'http://localhost:5173,http://127.0.0.1:5173,https://*.onrender.com,https://b-bakery-tan.vercel.app'
     ).split(',')
     if origin.strip()
 ]
