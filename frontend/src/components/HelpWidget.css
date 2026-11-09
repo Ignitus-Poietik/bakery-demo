@@ -63,8 +63,8 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: var(--rose-berry-soft, #fbeef3);
-  color: var(--rose-berry, #b5446e);
+  background: var(--golden-crust-soft, #f5ead8);
+  color: var(--golden-crust, #b87a38);
 }
 
 .help-title {
@@ -157,7 +157,7 @@
 
 .help-message.customer {
   align-self: flex-end;
-  background: var(--rose-berry, #b5446e);
+  background: var(--espresso, #23150f);
   color: #fff;
   border-bottom-right-radius: 4px;
 }
@@ -187,8 +187,8 @@
 
 .help-form input:focus {
   background: #fff;
-  border-color: var(--rose-berry, #b5446e);
-  box-shadow: 0 0 0 2px rgba(181, 68, 110, 0.12);
+  border-color: var(--golden-crust, #b87a38);
+  box-shadow: 0 0 0 2px rgba(184, 122, 56, 0.16);
 }
 
 .help-form button {
@@ -198,14 +198,14 @@
   place-items: center;
   border: 0;
   border-radius: 50%;
-  background: var(--rose-berry, #b5446e);
+  background: var(--espresso, #23150f);
   color: #fff;
   cursor: pointer;
   transition: background .15s ease;
 }
 
 .help-form button:hover:not(:disabled) {
-  background: var(--rose-berry-dark, #943256);
+  background: #3a241b;
 }
 
 .help-form button:disabled {

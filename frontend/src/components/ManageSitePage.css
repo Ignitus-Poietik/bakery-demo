@@ -1401,12 +1401,22 @@
 
   .manage-add-place-row {
     grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .manage-add-place-row button {
+    width: 100%;
   }
 
   .manage-place-item {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
+  }
+
+  .manage-place-name {
+    white-space: normal;
+    word-break: break-word;
   }
 
   .manage-place-price-controls {

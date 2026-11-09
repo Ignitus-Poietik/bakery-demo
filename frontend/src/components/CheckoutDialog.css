@@ -205,6 +205,10 @@
   gap: 12px;
 }
 
+.checkout-name-fields:has(> :nth-child(3)) > :nth-child(3) {
+  grid-column: 1 / -1;
+}
+
 .fulfillment-options {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -407,6 +411,7 @@
   }
 
   .checkout-dialog {
+    width: 100%;
     max-height: 94vh;
     max-height: 94dvh;
     border-radius: 16px;
@@ -422,11 +427,19 @@
     gap: 0;
   }
 
+  .checkout-name-fields > * {
+    grid-column: auto !important;
+  }
+
   .checkout-content {
     padding-block: 18px 22px;
   }
 
   .fulfillment-options {
     grid-template-columns: 1fr;
+  }
+
+  .fulfillment-options > button {
+    min-height: 52px;
   }
 }
