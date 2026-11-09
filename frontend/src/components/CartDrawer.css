@@ -13,7 +13,8 @@
 
 .cart-drawer {
   width: min(520px, 100%);
-  height: 100%;
+  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   background: #ffffff;
@@ -381,6 +382,11 @@
 
 @media (max-width: 520px) {
   .cart-drawer-header {
+    min-height: 80px;
+    padding-block: 16px;
+  }
+
+  .cart-drawer-header {
     padding-inline: 19px;
   }
 
@@ -390,5 +396,25 @@
 
   .cart-summary {
     padding-inline: 19px;
+    padding-bottom: max(18px, env(safe-area-inset-bottom));
+  }
+
+  .cart-line {
+    grid-template-columns: 60px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .cart-line-image {
+    width: 60px;
+    height: 60px;
+  }
+
+  .cart-line-top,
+  .cart-line-bottom {
+    min-width: 0;
+  }
+
+  .cart-line-top h3 {
+    overflow-wrap: anywhere;
   }
 }

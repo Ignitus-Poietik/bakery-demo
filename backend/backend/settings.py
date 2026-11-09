@@ -8,6 +8,7 @@ import dj_database_url
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 RUNNING_TESTS = 'test' in sys.argv
+RUNNING_DEVSERVER = 'runserver' in sys.argv
 
 # Load environment variables from backend/.env if present (for local dev)
 _env_path = BASE_DIR / '.env'
@@ -29,7 +30,12 @@ SECRET_KEY = os.environ.get(
 )
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'False').lower() in ('true', '1', 'yes')
+_debug_env = os.environ.get('DEBUG')
+if _debug_env is not None:
+    DEBUG = _debug_env.lower() in ('true', '1', 'yes')
+else:
+    # Default to True for local development 'runserver', False for production WSGI/Gunicorn
+    DEBUG = RUNNING_DEVSERVER
 
 ALLOWED_HOSTS = [
     host.strip()
@@ -184,7 +190,7 @@ CSRF_TRUSTED_ORIGINS = [
 
 
 # Production Security Hardening
-if not DEBUG and not RUNNING_TESTS:
+if not DEBUG and not RUNNING_TESTS and not RUNNING_DEVSERVER:
     # Render terminates SSL at proxy layer; inform Django through HTTP_X_FORWARDED_PROTO
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'True').lower() in ('true', '1', 'yes')

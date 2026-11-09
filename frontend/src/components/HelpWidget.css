@@ -31,6 +31,7 @@
   bottom: 24px;
   width: min(360px, calc(100vw - 32px));
   height: min(500px, calc(100vh - 48px));
+  height: min(500px, calc(100dvh - 48px));
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -227,8 +228,10 @@
 
   .help-widget {
     right: 10px;
-    bottom: 10px;
+    bottom: max(10px, env(safe-area-inset-bottom));
     width: calc(100vw - 20px);
     height: min(510px, calc(100vh - 20px));
+    height: min(510px, calc(100dvh - 20px));
+    max-height: calc(100% - 20px);
   }
 }

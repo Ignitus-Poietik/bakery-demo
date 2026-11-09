@@ -3,11 +3,13 @@
   align-items: center;
   padding: 22px;
   overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .checkout-dialog {
   width: min(590px, 100%);
   max-height: min(90vh, 880px);
+  max-height: min(90dvh, 880px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -400,11 +402,14 @@
 
 @media (max-width: 520px) {
   .checkout-overlay {
-    padding: 10px;
+    align-items: flex-start;
+    padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom));
   }
 
   .checkout-dialog {
     max-height: 94vh;
+    max-height: 94dvh;
+    border-radius: 16px;
   }
 
   .checkout-header,
@@ -415,5 +420,13 @@
   .checkout-name-fields {
     grid-template-columns: 1fr;
     gap: 0;
+  }
+
+  .checkout-content {
+    padding-block: 18px 22px;
+  }
+
+  .fulfillment-options {
+    grid-template-columns: 1fr;
   }
 }

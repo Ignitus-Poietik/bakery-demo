@@ -46,6 +46,10 @@
   min-width: 0;
 }
 
+.visit-detail p {
+  overflow-wrap: anywhere;
+}
+
 .visit-detail small {
   color: #7d5b3b;
   font-size: 11.5px;

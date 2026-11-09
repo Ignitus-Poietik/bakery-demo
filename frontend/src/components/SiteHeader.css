@@ -15,6 +15,7 @@
 }
 
 .brand {
+  min-width: 0;
   width: fit-content;
   display: inline-flex;
   align-items: center;
@@ -23,11 +24,13 @@
 }
 
 .brand-wordmark {
+  min-width: 0;
   font-family: var(--font-heading, 'Fraunces', Georgia, serif);
   font-size: 21px;
   font-weight: 600;
   letter-spacing: -0.02em;
   color: var(--espresso, #23150f);
+  overflow-wrap: anywhere;
 }
 
 .main-nav,
@@ -121,9 +124,58 @@
   .site-header {
     grid-template-columns: 1fr auto;
     min-height: 62px;
+    gap: 12px;
+    padding-inline: 20px;
   }
 
   .main-nav {
     display: none;
+  }
+}
+
+@media (max-width: 420px) {
+  .site-header {
+    padding: 8px 14px;
+  }
+
+  .brand-wordmark {
+    font-size: clamp(16px, 5vw, 19px);
+  }
+
+  .header-actions {
+    gap: 7px;
+  }
+
+  .open-status {
+    padding: 4px 7px;
+    font-size: 10px;
+  }
+
+  .bag-button {
+    min-height: 36px;
+    padding-inline: 10px;
+    gap: 6px;
+  }
+}
+
+@media (max-width: 360px) {
+  .site-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+  }
+
+  .header-actions {
+    display: contents;
+  }
+
+  .bag-button {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .open-status {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: end;
   }
 }
