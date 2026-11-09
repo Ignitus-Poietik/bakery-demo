@@ -14,7 +14,7 @@ function smoothStep(start, end, value) {
   return progress * progress * (3 - 2 * progress)
 }
 
-export default function HeroSection({ bakeryName }) {
+export default function HeroSection({ bakeryName, tagline }) {
   const stageRef = useRef(null)
   const sceneRef = useRef(null)
   const canvasRef = useRef(null)
@@ -240,7 +240,7 @@ export default function HeroSection({ bakeryName }) {
               {bakeryName || 'Big Bakery'}
             </h1>
             <p className="hero-subline">
-              Freshly baked cakes for birthdays, celebrations, and everyday moments.
+              {tagline || 'Freshly baked cakes for birthdays, celebrations, and everyday moments.'}
             </p>
           </div>
         </div>

@@ -292,3 +292,66 @@ class BakeryFunctionalPlanTests(TestCase):
             HTTP_AUTHORIZATION=f"Bearer {token}",
         )
         self.assertEqual(orders_res.status_code, 200)
+
+    def test_10_upload_cake_image_and_custom_delivery_fees(self):
+        login_res = self.client.post(
+            "/api/manage/login/",
+            data=json.dumps({"password": "bakery2026"}),
+            content_type="application/json",
+        )
+        token = login_res.json().get("token")
+
+        # 1. Test image upload
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        test_file = SimpleUploadedFile(
+            "test_cake.png",
+            b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82",
+            content_type="image/png",
+        )
+        upload_res = self.client.post(
+            "/api/uploads/cake-image/",
+            {"image": test_file},
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        self.assertEqual(upload_res.status_code, 201)
+        self.assertIn("/media/cakes/", upload_res.json()["image_url"])
+
+        # 2. Test saving custom places and custom delivery prices
+        settings_res = self.client.patch(
+            "/api/settings/",
+            data=json.dumps({
+                "delivery_places": [
+                    {"name": "East Legon, Accra", "fee_ghs": 35.00},
+                    {"name": "Tema Community 25", "fee_ghs": 50.00},
+                    {"name": "Osu, Accra", "fee_ghs": 20.00},
+                ],
+                "delivery_fee_ghs": 25.00,
+            }),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        self.assertEqual(settings_res.status_code, 200)
+        s_data = settings_res.json()["settings"]
+        self.assertEqual(s_data["delivery_town_fees"]["Tema Community 25"], 50.00)
+        self.assertEqual(s_data["delivery_town_fees"]["Osu, Accra"], 20.00)
+
+        # 3. Order to Tema Community 25 should calculate total with 50.00 delivery fee
+        cake = next(c for c in self.boot["cakes"] if c["is_available"])
+        order_res = self.client.post(
+            "/api/orders/initiate/",
+            data=json.dumps({
+                "fulfillment_type": "delivery",
+                "name_input_mode": "full",
+                "customer_full_name": "Ama Osei",
+                "customer_phone": "0240001122",
+                "delivery_town": "Tema Community 25",
+                "delivery_address": "House 12, Estate Road",
+                "items": [{"cake_id": cake["id"], "quantity": 1}],
+            }),
+            content_type="application/json",
+        )
+        self.assertEqual(order_res.status_code, 201)
+        order = order_res.json()["order"]
+        self.assertEqual(order["delivery_fee_ghs"], 50.00)
+        expected_total = float(cake["price_ghs"]) + 50.00
+        self.assertAlmostEqual(order["total_ghs"], expected_total, places=2)

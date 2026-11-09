@@ -1,7 +1,11 @@
+import os
 import random
+import re
 import string
+import uuid
 from decimal import Decimal, InvalidOperation
 from html import escape
+from pathlib import Path
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model
 from django.http import HttpResponse
@@ -21,6 +25,19 @@ from .seed import SEEDED_ADMIN_PASSWORD, SEEDED_ADMIN_USERNAME, ensure_seeded, m
 
 
 def serialize_settings(s: BakerySettings):
+    towns = s.delivery_towns or list(DEFAULT_DELIVERY_TOWNS)
+    default_fee = float(s.delivery_fee_ghs or 25.0)
+    raw_fees = s.delivery_town_fees if isinstance(s.delivery_town_fees, dict) else {}
+    town_fees = {}
+    delivery_places = []
+    for town in towns:
+        try:
+            fee_val = float(raw_fees.get(town, default_fee))
+        except (TypeError, ValueError):
+            fee_val = default_fee
+        town_fees[town] = fee_val
+        delivery_places.append({"name": town, "fee_ghs": fee_val})
+
     return {
         "bakery_name": s.bakery_name,
         "tagline": s.tagline,
@@ -32,8 +49,10 @@ def serialize_settings(s: BakerySettings):
         "whatsapp_number": s.whatsapp_number,
         "delivery_enabled": s.delivery_enabled,
         "pickup_enabled": s.pickup_enabled,
-        "delivery_fee_ghs": float(s.delivery_fee_ghs),
-        "delivery_towns": s.delivery_towns or list(DEFAULT_DELIVERY_TOWNS),
+        "delivery_fee_ghs": default_fee,
+        "delivery_towns": towns,
+        "delivery_town_fees": town_fees,
+        "delivery_places": delivery_places,
         "paystack_public_key": s.paystack_public_key or settings.PAYSTACK_PUBLIC_KEY,
         "updated_at": s.updated_at.isoformat() if s.updated_at else None,
     }
@@ -194,10 +213,83 @@ def settings_view(request):
             if cleaned_towns:
                 settings_obj.delivery_towns = cleaned_towns
 
+        if "delivery_town_fees" in data and isinstance(data["delivery_town_fees"], dict):
+            cleaned_fees = {}
+            for k, v in data["delivery_town_fees"].items():
+                town_name = str(k).strip()
+                if not town_name:
+                    continue
+                try:
+                    fee_dec = Decimal(str(v))
+                    if fee_dec < 0:
+                        raise ValueError()
+                    cleaned_fees[town_name] = float(fee_dec.quantize(Decimal("0.01")))
+                except (InvalidOperation, ValueError):
+                    return Response({"error": f"Invalid delivery fee for '{town_name}'."}, status=400)
+            settings_obj.delivery_town_fees = cleaned_fees
+
+        if "delivery_places" in data and isinstance(data["delivery_places"], list):
+            new_towns = []
+            new_fees = {}
+            seen = set()
+            for entry in data["delivery_places"]:
+                if not isinstance(entry, dict):
+                    continue
+                place_name = str(entry.get("name", "")).strip()
+                if not place_name or place_name.lower() in seen:
+                    continue
+                seen.add(place_name.lower())
+                try:
+                    fee_dec = Decimal(str(entry.get("fee_ghs", settings_obj.delivery_fee_ghs)))
+                    if fee_dec < 0:
+                        raise ValueError()
+                except (InvalidOperation, ValueError):
+                    return Response({"error": f"Invalid delivery price for '{place_name}'."}, status=400)
+                new_towns.append(place_name)
+                new_fees[place_name] = float(fee_dec.quantize(Decimal("0.01")))
+            if new_towns:
+                settings_obj.delivery_towns = new_towns
+                settings_obj.delivery_town_fees = new_fees
+
         settings_obj.save()
         return Response({"settings": serialize_settings(settings_obj)})
 
     return Response({"settings": serialize_settings(settings_obj)})
+
+
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def upload_cake_image_view(request):
+    """
+    Allows an authenticated manager to upload a cake photo file from their device.
+    Saves the file under MEDIA_ROOT/cakes/ and returns its URL.
+    """
+    uploaded_file = request.FILES.get("image")
+    if not uploaded_file:
+        return Response({"error": "No image file provided."}, status=400)
+
+    ext = os.path.splitext(uploaded_file.name)[1].lower()
+    allowed_exts = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif", ".svg"}
+    if ext not in allowed_exts:
+        return Response(
+            {"error": "Unsupported file format. Please upload a JPG, PNG, WebP, AVIF, GIF, or SVG image."},
+            status=400,
+        )
+
+    if uploaded_file.size > 12 * 1024 * 1024:
+        return Response({"error": "Image file is too large (maximum 12 MB)."}, status=400)
+
+    safe_stem = re.sub(r"[^a-zA-Z0-9_-]+", "-", os.path.splitext(uploaded_file.name)[0]).strip("-")[:40] or "cake"
+    filename = f"{safe_stem}-{uuid.uuid4().hex[:8]}{ext}"
+    cakes_dir = Path(settings.MEDIA_ROOT) / "cakes"
+    cakes_dir.mkdir(parents=True, exist_ok=True)
+    dest_path = cakes_dir / filename
+
+    with dest_path.open("wb") as out_file:
+        for chunk in uploaded_file.chunks():
+            out_file.write(chunk)
+
+    return Response({"image_url": f"{settings.MEDIA_URL}cakes/{filename}"}, status=201)
 
 
 @api_view(["GET", "POST"])
@@ -505,7 +597,15 @@ def initiate_order_view(request):
             }
         )
 
-    delivery_fee = settings_obj.delivery_fee_ghs if fulfillment_type == "delivery" else Decimal("0.00")
+    if fulfillment_type == "delivery":
+        town_fees = settings_obj.delivery_town_fees if isinstance(settings_obj.delivery_town_fees, dict) else {}
+        raw_town_fee = town_fees.get(delivery_town, settings_obj.delivery_fee_ghs)
+        try:
+            delivery_fee = Decimal(str(raw_town_fee)).quantize(Decimal("0.01"))
+        except (InvalidOperation, ValueError):
+            delivery_fee = settings_obj.delivery_fee_ghs
+    else:
+        delivery_fee = Decimal("0.00")
     total_ghs = (subtotal + delivery_fee).quantize(Decimal("0.01"))
 
     order_ref = generate_order_reference()

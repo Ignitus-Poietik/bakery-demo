@@ -270,7 +270,11 @@
 
 .town-options button {
   width: 100%;
-  padding: 9px 10px;
+  padding: 9px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
   border: 0;
   border-bottom: 1px solid #f6f1eb;
   background: #fff;
@@ -279,6 +283,13 @@
   font-size: 12px;
   text-align: left;
   cursor: pointer;
+}
+
+.town-option-fee {
+  color: var(--espresso, #23150f);
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .town-options button:hover {

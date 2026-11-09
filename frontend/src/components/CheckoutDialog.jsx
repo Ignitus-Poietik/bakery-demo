@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { toast } from 'react-hot-toast'
 import './CheckoutDialog.css'
 import Icon from './Icon'
 
@@ -43,11 +44,27 @@ export default function CheckoutDialog({
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const towns = settings?.delivery_towns ?? EMPTY_TOWNS
-  const total = subtotal + (form.fulfillment === 'delivery' ? deliveryFee : 0)
+  const townFees = settings?.delivery_town_fees || {}
+  const activeDeliveryFee =
+    form.fulfillment === 'delivery'
+      ? Number(
+          form.town && townFees[form.town] !== undefined
+            ? townFees[form.town]
+            : deliveryFee,
+        )
+      : 0
+  const total = subtotal + activeDeliveryFee
   const filteredTowns = useMemo(
     () => towns.filter((town) => town.toLowerCase().includes(townQuery.trim().toLowerCase())),
     [towns, townQuery],
   )
+
+  function getTownFee(townName) {
+    if (townFees[townName] !== undefined) {
+      return Number(townFees[townName])
+    }
+    return Number(deliveryFee || 0)
+  }
 
   function updateForm(field, value) {
     setForm((current) => ({ ...current, [field]: value }))
@@ -92,9 +109,13 @@ export default function CheckoutDialog({
           })),
         }),
       })
-      setPendingOrder(await readResponse(response))
+      const result = await readResponse(response)
+      setPendingOrder(result)
+      toast.success('Order details saved. Proceed to Paystack payment.')
     } catch (requestError) {
-      setError(requestError.message || 'Could not connect to the bakery server.')
+      const msg = requestError.message || 'Could not connect to the bakery server.'
+      setError(msg)
+      toast.error(msg)
     } finally {
       setSubmitting(false)
     }
@@ -121,8 +142,11 @@ export default function CheckoutDialog({
       setConfirmedOrder(result.order)
       setPendingOrder(null)
       onSuccess(result.order)
+      toast.success('Payment verified! Your cake order is confirmed.')
     } catch (requestError) {
-      setError(requestError.message || 'We could not verify your payment.')
+      const msg = requestError.message || 'We could not verify your payment.'
+      setError(msg)
+      toast.error(msg)
     } finally {
       setSubmitting(false)
     }
@@ -257,7 +281,11 @@ export default function CheckoutDialog({
                       {settings.delivery_enabled && (
                         <button className={form.fulfillment === 'delivery' ? 'selected' : ''} type="button" onClick={() => updateForm('fulfillment', 'delivery')}>
                           <span className="option-radio" /> Delivery
-                          <small>{money(settings.delivery_fee_ghs)} fee</small>
+                          <small>
+                            {form.town
+                              ? `${money(activeDeliveryFee)} (${form.town})`
+                              : `${money(settings.delivery_fee_ghs)} base fee`}
+                          </small>
                         </button>
                       )}
                       {settings.pickup_enabled && (
@@ -285,12 +313,15 @@ export default function CheckoutDialog({
                           />
                           {townOpen && filteredTowns.length > 0 && (
                             <span className="town-options" role="listbox">
-                              {filteredTowns.slice(0, 8).map((town) => (
+                              {filteredTowns.slice(0, 12).map((town) => (
                                 <button key={town} type="button" role="option" onMouseDown={(event) => event.preventDefault()} onClick={() => {
                                   setTownQuery(town)
                                   updateForm('town', town)
                                   setTownOpen(false)
-                                }}>{town}</button>
+                                }}>
+                                  <span>{town}</span>
+                                  <strong className="town-option-fee">{money(getTownFee(town))}</strong>
+                                </button>
                               ))}
                             </span>
                           )}

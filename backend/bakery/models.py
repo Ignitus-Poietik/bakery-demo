@@ -31,6 +31,8 @@ DEFAULT_DELIVERY_TOWNS = [
     "Ho - Bankoe",
 ]
 
+DEFAULT_DELIVERY_TOWN_FEES = {town: 25.00 for town in DEFAULT_DELIVERY_TOWNS}
+
 
 class BakerySettings(models.Model):
     bakery_name = models.CharField(max_length=150, default="Big Bakery Patisserie")
@@ -57,6 +59,7 @@ class BakerySettings(models.Model):
     pickup_enabled = models.BooleanField(default=True)
     delivery_fee_ghs = models.DecimalField(max_digits=10, decimal_places=2, default=25.00)
     delivery_towns = models.JSONField(default=list)
+    delivery_town_fees = models.JSONField(default=dict)
     paystack_public_key = models.CharField(
         max_length=120,
         blank=True,
@@ -67,6 +70,12 @@ class BakerySettings(models.Model):
     def save(self, *args, **kwargs):
         if not self.delivery_towns:
             self.delivery_towns = list(DEFAULT_DELIVERY_TOWNS)
+        if not isinstance(self.delivery_town_fees, dict):
+            self.delivery_town_fees = {}
+        default_fee = float(self.delivery_fee_ghs or 25.00)
+        for town in self.delivery_towns:
+            if town not in self.delivery_town_fees:
+                self.delivery_town_fees[town] = default_fee
         super().save(*args, **kwargs)
 
     def __str__(self):

@@ -34,7 +34,10 @@ export default function StorefrontPage({
         onOpenBag={onOpenBag}
       />
       <main>
-        <HeroSection bakeryName={settings?.bakery_name || 'The Cake Bakery'} />
+        <HeroSection
+          bakeryName={settings?.bakery_name || 'The Cake Bakery'}
+          tagline={settings?.tagline}
+        />
         <CakeCatalog
           cakes={cakes}
           loading={loading}

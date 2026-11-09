@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { toast } from 'react-hot-toast'
 import './ManageSitePage.css'
 
 const TOKEN_STORAGE_KEY = 'big_bakery_manage_token'
@@ -30,6 +31,7 @@ const EMPTY_CAKE_FORM = {
   weight_or_size: '8-inch Tall (12–14 slices)',
   badge: '',
   image_url: '',
+  image_mode: 'upload', // 'upload' | 'url'
   description: '',
   is_available: true,
 }
@@ -56,8 +58,9 @@ const formatDate = (iso) => {
 }
 
 async function requestWithToken(apiBase, path, options = {}, activeToken = '') {
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData
   const headers = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(options.headers || {}),
   }
   if (activeToken) {
@@ -79,6 +82,27 @@ async function requestWithToken(apiBase, path, options = {}, activeToken = '') {
   return data
 }
 
+function notifyStoreChange(onStoreUpdated) {
+  const ts = String(Date.now())
+  try {
+    window.localStorage.setItem('bakery_store_updated_at', ts)
+  } catch {
+    void 0
+  }
+  try {
+    if (typeof window.BroadcastChannel === 'function') {
+      const channel = new window.BroadcastChannel('bakery_store_sync')
+      channel.postMessage({ timestamp: ts })
+      channel.close()
+    }
+  } catch {
+    void 0
+  }
+  if (typeof onStoreUpdated === 'function') {
+    onStoreUpdated()
+  }
+}
+
 export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
   const [token, setToken] = useState(() => window.localStorage.getItem(TOKEN_STORAGE_KEY) || '')
   const [loginPassword, setLoginPassword] = useState('')
@@ -87,8 +111,6 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
 
   const [activeTab, setActiveTab] = useState('cakes')
   const [loading, setLoading] = useState(() => Boolean(window.localStorage.getItem(TOKEN_STORAGE_KEY)))
-  const [bannerMessage, setBannerMessage] = useState('')
-  const [bannerType, setBannerType] = useState('success')
 
   const [settings, setSettings] = useState(null)
   const [cakes, setCakes] = useState([])
@@ -100,6 +122,7 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
   const [cakeForm, setCakeForm] = useState(EMPTY_CAKE_FORM)
   const [cakeFormOpen, setCakeFormOpen] = useState(false)
   const [cakeSaving, setCakeSaving] = useState(false)
+  const [imageUploading, setImageUploading] = useState(false)
 
   // Orders Management State
   const [orderSearch, setOrderSearch] = useState('')
@@ -110,9 +133,28 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
   const [settingsForm, setSettingsForm] = useState(null)
   const [settingsSaving, setSettingsSaving] = useState(false)
 
+  // Delivery places state inside settings tab
+  const [newPlaceName, setNewPlaceName] = useState('')
+  const [newPlaceFee, setNewPlaceFee] = useState('')
+  const [placeSearch, setPlaceSearch] = useState('')
+
+  const placesToDisplay = useMemo(() => {
+    const list = settingsForm?.delivery_places || []
+    if (!placeSearch.trim()) return list
+    const q = placeSearch.trim().toLowerCase()
+    return list.filter((p) => p.name.toLowerCase().includes(q))
+  }, [settingsForm?.delivery_places, placeSearch])
+
+  const broadcastStoreChange = useCallback(() => {
+    notifyStoreChange(onStoreUpdated)
+  }, [onStoreUpdated])
+
   function notify(message, type = 'success') {
-    setBannerMessage(message)
-    setBannerType(type)
+    if (type === 'error') {
+      toast.error(message)
+    } else {
+      toast.success(message)
+    }
   }
 
   const authFetch = useCallback(
@@ -134,6 +176,22 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
     setSettings(bootData.settings)
     setCakes(bootData.cakes || [])
     setOrders(ordersData.orders || [])
+
+    const defaultFee = Number(bootData.settings.delivery_fee_ghs ?? 25.0)
+    let placesList = []
+    if (Array.isArray(bootData.settings.delivery_places) && bootData.settings.delivery_places.length > 0) {
+      placesList = bootData.settings.delivery_places.map((p) => ({
+        name: p.name,
+        fee_ghs: Number(p.fee_ghs ?? defaultFee),
+      }))
+    } else if (Array.isArray(bootData.settings.delivery_towns)) {
+      const townFees = bootData.settings.delivery_town_fees || {}
+      placesList = bootData.settings.delivery_towns.map((town) => ({
+        name: town,
+        fee_ghs: townFees[town] !== undefined ? Number(townFees[town]) : defaultFee,
+      }))
+    }
+
     setSettingsForm({
       bakery_name: bootData.settings.bakery_name || '',
       tagline: bootData.settings.tagline || '',
@@ -146,7 +204,7 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
       delivery_enabled: Boolean(bootData.settings.delivery_enabled),
       pickup_enabled: Boolean(bootData.settings.pickup_enabled),
       delivery_fee_ghs: String(bootData.settings.delivery_fee_ghs ?? '25.00'),
-      delivery_towns_text: (bootData.settings.delivery_towns || []).join('\n'),
+      delivery_places: placesList,
     })
   }, [])
 
@@ -215,9 +273,10 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
       window.localStorage.setItem(TOKEN_STORAGE_KEY, data.token)
       setToken(data.token)
       setLoginPassword('')
-      setBannerMessage('')
+      toast.success('Signed in to management dashboard')
     } catch (err) {
       setLoginError(err.message || 'Could not sign in.')
+      toast.error(err.message || 'Could not sign in.')
     } finally {
       setLoginLoading(false)
     }
@@ -226,7 +285,7 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
   function handleLogout() {
     window.localStorage.removeItem(TOKEN_STORAGE_KEY)
     setToken('')
-    setBannerMessage('')
+    toast('Signed out of management console')
   }
 
   const allCategories = useMemo(() => {
@@ -277,11 +336,11 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
       })
       setSettings(data.settings)
       setSettingsForm((prev) => (prev ? { ...prev, is_ordering_open: data.settings.is_ordering_open } : prev))
-      if (onStoreUpdated) onStoreUpdated()
+      broadcastStoreChange()
       notify(
         data.settings.is_ordering_open
-          ? 'Online ordering is now OPEN for customers.'
-          : 'Online ordering is now CLOSED for the whole business.',
+          ? 'Online ordering is now OPEN on customer storefront.'
+          : 'Online ordering is now CLOSED on customer storefront.',
       )
     } catch (err) {
       notify(err.message, 'error')
@@ -292,12 +351,14 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
     setCakeForm({
       ...EMPTY_CAKE_FORM,
       category: allCategories[0] || 'Birthday Cakes',
+      image_mode: 'upload',
     })
     setCakeFormOpen(true)
     setActiveTab('cakes')
   }
 
   function openEditCakeForm(cake) {
+    const hasUploadUrl = cake.image_url?.startsWith('/media/')
     setCakeForm({
       id: cake.id,
       name: cake.name || '',
@@ -307,10 +368,39 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
       weight_or_size: cake.weight_or_size || '8-inch Tall (12–14 slices)',
       badge: cake.badge || '',
       image_url: cake.image_url || '',
+      image_mode: hasUploadUrl ? 'upload' : cake.image_url ? 'url' : 'upload',
       description: cake.description || '',
       is_available: Boolean(cake.is_available),
     })
     setCakeFormOpen(true)
+  }
+
+  async function handleImageFileUpload(event) {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setImageUploading(true)
+    const formData = new FormData()
+    formData.append('image', file)
+
+    const uploadToastId = toast.loading('Uploading cake photo…')
+    try {
+      const data = await authFetch('/api/uploads/cake-image/', {
+        method: 'POST',
+        body: formData,
+      })
+      setCakeForm((prev) => ({
+        ...prev,
+        image_url: data.image_url,
+        image_mode: 'upload',
+      }))
+      toast.success('Photo uploaded successfully!', { id: uploadToastId })
+    } catch (err) {
+      toast.error(err.message || 'Image upload failed.', { id: uploadToastId })
+    } finally {
+      setImageUploading(false)
+      event.target.value = ''
+    }
   }
 
   async function handleSaveCake(event) {
@@ -337,7 +427,7 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
           body: JSON.stringify(payload),
         })
         setCakes((prev) => prev.map((c) => (c.id === cakeForm.id ? data.cake : c)))
-        notify(`Updated "${data.cake.name}".`)
+        notify(`Updated "${data.cake.name}" on the menu.`)
       } else {
         const data = await authFetch('/api/cakes/', {
           method: 'POST',
@@ -348,7 +438,7 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
       }
       setCakeFormOpen(false)
       setCakeForm(EMPTY_CAKE_FORM)
-      if (onStoreUpdated) onStoreUpdated()
+      broadcastStoreChange()
     } catch (err) {
       notify(err.message, 'error')
     } finally {
@@ -363,7 +453,7 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
         body: JSON.stringify({ is_available: !cake.is_available }),
       })
       setCakes((prev) => prev.map((c) => (c.id === cake.id ? data.cake : c)))
-      if (onStoreUpdated) onStoreUpdated()
+      broadcastStoreChange()
       notify(
         data.cake.is_available
           ? `"${data.cake.name}" is now marked Available.`
@@ -379,7 +469,7 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
     try {
       await authFetch(`/api/cakes/${cake.id}/`, { method: 'DELETE' })
       setCakes((prev) => prev.filter((c) => c.id !== cake.id))
-      if (onStoreUpdated) onStoreUpdated()
+      broadcastStoreChange()
       notify(`Removed "${cake.name}" from the menu.`)
     } catch (err) {
       notify(err.message, 'error')
@@ -404,36 +494,91 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
     }
   }
 
+  // Delivery Places Management helpers
+  function handleAddDeliveryPlace(event) {
+    event.preventDefault()
+    const name = newPlaceName.trim()
+    if (!name) return
+
+    const fee = Number(newPlaceFee || settingsForm?.delivery_fee_ghs || 25.0)
+    if (fee < 0) {
+      toast.error('Delivery price must be 0 or greater.')
+      return
+    }
+
+    setSettingsForm((prev) => {
+      const currentPlaces = prev?.delivery_places || []
+      const exists = currentPlaces.some((p) => p.name.toLowerCase() === name.toLowerCase())
+      if (exists) {
+        toast.error(`"${name}" is already in your delivery places list.`)
+        return prev
+      }
+      return {
+        ...prev,
+        delivery_places: [{ name, fee_ghs: fee }, ...currentPlaces],
+      }
+    })
+
+    toast.success(`Added "${name}" with delivery fee GHS ${fee.toFixed(2)}`)
+    setNewPlaceName('')
+    setNewPlaceFee('')
+  }
+
+  function handleUpdatePlaceFee(placeName, newFee) {
+    const val = Number(newFee)
+    setSettingsForm((prev) => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        delivery_places: prev.delivery_places.map((p) =>
+          p.name === placeName ? { ...p, fee_ghs: isNaN(val) ? p.fee_ghs : val } : p,
+        ),
+      }
+    })
+  }
+
+  function handleRemovePlace(placeName) {
+    setSettingsForm((prev) => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        delivery_places: prev.delivery_places.filter((p) => p.name !== placeName),
+      }
+    })
+    toast(`Removed "${placeName}" from delivery places. Click Save to apply.`)
+  }
+
   async function handleSaveSettings(event) {
     event.preventDefault()
     if (!settingsForm) return
     setSettingsSaving(true)
-    const townsList = settingsForm.delivery_towns_text
-      .split(/\r?\n|,/)
-      .map((t) => t.trim())
-      .filter(Boolean)
+
+    const payload = {
+      bakery_name: settingsForm.bakery_name.trim(),
+      tagline: settingsForm.tagline.trim(),
+      is_ordering_open: Boolean(settingsForm.is_ordering_open),
+      closed_reason: settingsForm.closed_reason.trim(),
+      opening_hours: settingsForm.opening_hours.trim(),
+      location_address: settingsForm.location_address.trim(),
+      phone_number: settingsForm.phone_number.trim(),
+      whatsapp_number: settingsForm.whatsapp_number.trim(),
+      delivery_enabled: Boolean(settingsForm.delivery_enabled),
+      pickup_enabled: Boolean(settingsForm.pickup_enabled),
+      delivery_fee_ghs: Number(settingsForm.delivery_fee_ghs || 25.0),
+      delivery_places: (settingsForm.delivery_places || []).map((p) => ({
+        name: p.name.trim(),
+        fee_ghs: Number(p.fee_ghs || settingsForm.delivery_fee_ghs || 25.0),
+      })),
+    }
 
     try {
       const data = await authFetch('/api/settings/', {
         method: 'PATCH',
-        body: JSON.stringify({
-          bakery_name: settingsForm.bakery_name.trim(),
-          tagline: settingsForm.tagline.trim(),
-          is_ordering_open: Boolean(settingsForm.is_ordering_open),
-          closed_reason: settingsForm.closed_reason.trim(),
-          opening_hours: settingsForm.opening_hours.trim(),
-          location_address: settingsForm.location_address.trim(),
-          phone_number: settingsForm.phone_number.trim(),
-          whatsapp_number: settingsForm.whatsapp_number.trim(),
-          delivery_enabled: Boolean(settingsForm.delivery_enabled),
-          pickup_enabled: Boolean(settingsForm.pickup_enabled),
-          delivery_fee_ghs: Number(settingsForm.delivery_fee_ghs || 0),
-          delivery_towns: townsList,
-        }),
+        body: JSON.stringify(payload),
       })
       setSettings(data.settings)
-      if (onStoreUpdated) onStoreUpdated()
-      notify('Business settings updated.')
+      broadcastStoreChange()
+      notify('Business settings and delivery pricing updated on the storefront!')
     } catch (err) {
       notify(err.message, 'error')
     } finally {
@@ -449,7 +594,7 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
           <div className="manage-login-header">
             <a href="/" className="manage-back-link">← Back to Storefront</a>
             <h1>Business Management</h1>
-            <p>Sign in to manage your cake menu, prices, store availability, business details, and customer orders.</p>
+            <p>Sign in to manage your cake menu, prices, store availability, delivery places, and customer orders.</p>
           </div>
 
           <form onSubmit={handleLogin} className="manage-login-form">
@@ -484,15 +629,15 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
   const headerMeta = {
     cakes: {
       title: 'Cakes & Menu',
-      subtitle: 'Add, edit, or remove cakes and manage GHS prices, categories, and availability.',
+      subtitle: 'Add, edit, or remove cakes and manage GHS prices, photos, categories, and availability.',
     },
     orders: {
       title: 'Incoming Orders',
       subtitle: 'Review customer orders, cake inscriptions, delivery addresses, and update fulfillment statuses.',
     },
     ordering: {
-      title: 'Ordering & Delivery Control',
-      subtitle: 'Open or close ordering for the whole business and configure delivery fees and towns.',
+      title: 'Delivery Places & Custom Prices',
+      subtitle: 'Set delivery fees for each town or area you deliver to, and toggle store-wide ordering.',
     },
     profile: {
       title: 'Business Hours, Location & Contact',
@@ -524,7 +669,7 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                 className="manage-sidebar-toggle-btn"
                 onClick={handleToggleOrderingOpen}
               >
-                {settings.is_ordering_open ? 'Close Whole-Store Ordering' : 'Reopen Store Ordering'}
+                {settings.is_ordering_open ? 'Close Store Ordering' : 'Reopen Store Ordering'}
               </button>
             </div>
           )}
@@ -560,7 +705,10 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                 className={`manage-sidenav-item ${activeTab === 'ordering' ? 'active' : ''}`}
                 onClick={() => setActiveTab('ordering')}
               >
-                <span className="manage-sidenav-text">Ordering & Delivery</span>
+                <span className="manage-sidenav-text">Delivery Places & Fees</span>
+                <span className="manage-sidenav-count">
+                  {settingsForm?.delivery_places?.length ?? settings?.delivery_towns?.length ?? 0}
+                </span>
               </button>
 
               <button
@@ -628,18 +776,11 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
               <small>Verified via Paystack</small>
             </div>
             <div className="manage-stat-card">
-              <span className="manage-stat-label">Store Status</span>
-              <strong>{settings?.is_ordering_open ? 'Accepting Orders' : 'Paused'}</strong>
-              <small>{settings?.opening_hours || 'Hours configured in settings'}</small>
+              <span className="manage-stat-label">Delivery Towns</span>
+              <strong>{settingsForm?.delivery_places?.length ?? 0} Places</strong>
+              <small>Custom prices configured</small>
             </div>
           </section>
-
-          {bannerMessage && (
-            <div className={`manage-banner ${bannerType}`} role="status">
-              <span>{bannerMessage}</span>
-              <button type="button" onClick={() => setBannerMessage('')}>Dismiss</button>
-            </div>
-          )}
 
           {loading && <p className="manage-loading">Loading bakery data…</p>}
 
@@ -729,16 +870,80 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                         onChange={(e) => setCakeForm({ ...cakeForm, badge: e.target.value })}
                       />
                     </label>
+                  </div>
 
-                    <label className="manage-field">
-                      <span>Photo URL</span>
-                      <input
-                        type="text"
-                        value={cakeForm.image_url}
-                        placeholder="https://images.unsplash.com/..."
-                        onChange={(e) => setCakeForm({ ...cakeForm, image_url: e.target.value })}
-                      />
-                    </label>
+                  {/* Photo Upload or URL Choice */}
+                  <div className="manage-photo-section">
+                    <div className="manage-photo-header">
+                      <span className="manage-field-label">Cake Photo *</span>
+                      <div className="manage-photo-mode-toggle">
+                        <button
+                          type="button"
+                          className={cakeForm.image_mode === 'upload' ? 'active' : ''}
+                          onClick={() => setCakeForm((prev) => ({ ...prev, image_mode: 'upload' }))}
+                        >
+                          Upload File
+                        </button>
+                        <button
+                          type="button"
+                          className={cakeForm.image_mode === 'url' ? 'active' : ''}
+                          onClick={() => setCakeForm((prev) => ({ ...prev, image_mode: 'url' }))}
+                        >
+                          Use Image URL
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="manage-photo-input-area">
+                      {cakeForm.image_mode === 'upload' ? (
+                        <div className="manage-upload-dropzone">
+                          <label className="manage-file-label">
+                            <input
+                              type="file"
+                              accept="image/png, image/jpeg, image/webp, image/avif, image/gif, image/svg+xml"
+                              disabled={imageUploading}
+                              onChange={handleImageFileUpload}
+                            />
+                            <div className="manage-dropzone-inner">
+                              <span className="manage-dropzone-icon">📷</span>
+                              <strong>{imageUploading ? 'Uploading photo…' : 'Click to select or drop a photo'}</strong>
+                              <small>Supports PNG, JPG, WebP, AVIF up to 12 MB</small>
+                            </div>
+                          </label>
+                          {cakeForm.image_url && (
+                            <p className="manage-current-path">Current uploaded file: <code>{cakeForm.image_url}</code></p>
+                          )}
+                        </div>
+                      ) : (
+                        <label className="manage-field">
+                          <span>Image URL</span>
+                          <input
+                            type="url"
+                            value={cakeForm.image_url}
+                            placeholder="https://images.unsplash.com/photo-..."
+                            onChange={(e) => setCakeForm({ ...cakeForm, image_url: e.target.value })}
+                          />
+                        </label>
+                      )}
+
+                      {/* Photo Preview */}
+                      {cakeForm.image_url && (
+                        <div className="manage-photo-preview-wrap">
+                          <div className="manage-photo-preview-card">
+                            <img src={cakeForm.image_url} alt="Cake preview" />
+                            <button
+                              type="button"
+                              className="manage-photo-clear-btn"
+                              title="Remove photo"
+                              onClick={() => setCakeForm((prev) => ({ ...prev, image_url: '' }))}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                          <span className="manage-preview-label">Live Preview</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <label className="manage-field">
@@ -761,7 +966,7 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                   </label>
 
                   <div className="manage-editor-actions">
-                    <button type="submit" className="button button-primary" disabled={cakeSaving}>
+                    <button type="submit" className="button button-primary" disabled={cakeSaving || imageUploading}>
                       {cakeSaving ? 'Saving…' : cakeForm.id ? 'Save Cake Changes' : 'Create Cake'}
                     </button>
                     <button
@@ -973,12 +1178,13 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
             </section>
           )}
 
-          {/* SECTION 3: ORDERING & DELIVERY CONTROL */}
+          {/* SECTION 3: DELIVERY PLACES & CUSTOM PRICES */}
           {!loading && activeTab === 'ordering' && settingsForm && (
             <section className="manage-panel">
               <form className="manage-settings-form" onSubmit={handleSaveSettings}>
+                {/* Store Status Toggle */}
                 <fieldset className="manage-fieldset">
-                  <legend>Whole-Business Ordering Status</legend>
+                  <legend>Storewide Ordering Switch</legend>
                   <label className="manage-checkbox">
                     <input
                       type="checkbox"
@@ -988,12 +1194,12 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                       }
                     />
                     <span>
-                      <strong>Online Ordering is Open</strong> — Allow customers to add cakes and submit orders on the website
+                      <strong>Online Ordering is Open</strong> — Allow customers to add cakes and submit orders on the storefront
                     </span>
                   </label>
 
                   <label className="manage-field">
-                    <span>Closed Banner Message (shown to visitors when online ordering is closed)</span>
+                    <span>Closed Banner Message (shown to customers when ordering is closed)</span>
                     <textarea
                       rows={2}
                       value={settingsForm.closed_reason}
@@ -1004,8 +1210,9 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                   </label>
                 </fieldset>
 
+                {/* Fulfillment Switches & Base Delivery Fee */}
                 <fieldset className="manage-fieldset">
-                  <legend>Fulfillment Options & Supported Towns</legend>
+                  <legend>Fulfillment Options & Base Fee</legend>
                   <div className="manage-form-grid">
                     <label className="manage-checkbox">
                       <input
@@ -1015,7 +1222,7 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                           setSettingsForm({ ...settingsForm, delivery_enabled: e.target.checked })
                         }
                       />
-                      <span>Enable Delivery Option</span>
+                      <span>Enable Delivery Fulfillment</span>
                     </label>
 
                     <label className="manage-checkbox">
@@ -1026,11 +1233,11 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                           setSettingsForm({ ...settingsForm, pickup_enabled: e.target.checked })
                         }
                       />
-                      <span>Enable Store Pickup Option</span>
+                      <span>Enable Store Pickup Fulfillment</span>
                     </label>
 
                     <label className="manage-field">
-                      <span>Flat Delivery Fee (GHS)</span>
+                      <span>Default / Fallback Delivery Fee (GHS)</span>
                       <input
                         type="number"
                         step="0.01"
@@ -1040,24 +1247,106 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                           setSettingsForm({ ...settingsForm, delivery_fee_ghs: e.target.value })
                         }
                       />
+                      <small>Used when a delivery town does not have a specific custom fee assigned.</small>
                     </label>
                   </div>
+                </fieldset>
 
-                  <label className="manage-field">
-                    <span>Supported Delivery Towns (one town per line)</span>
-                    <textarea
-                      rows={8}
-                      value={settingsForm.delivery_towns_text}
-                      onChange={(e) =>
-                        setSettingsForm({ ...settingsForm, delivery_towns_text: e.target.value })
-                      }
+                {/* Delivery Places and Custom Delivery Prices */}
+                <fieldset className="manage-fieldset">
+                  <legend>Delivery Places & Custom Delivery Prices</legend>
+                  <p className="manage-legend-sub">
+                    Add the towns, suburbs, or cities you deliver to and set the exact delivery price for each area.
+                    These prices show in the customer checkout dropdown and are automatically added to the customer's total.
+                  </p>
+
+                  {/* Add New Delivery Place Row */}
+                  <div className="manage-add-place-card">
+                    <h4>+ Add Delivery Place & Price</h4>
+                    <div className="manage-add-place-row">
+                      <input
+                        type="text"
+                        placeholder="Place name (e.g. East Legon, Accra)"
+                        value={newPlaceName}
+                        onChange={(e) => setNewPlaceName(e.target.value)}
+                      />
+                      <div className="manage-price-input-wrap">
+                        <span className="price-prefix">GHS</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder={settingsForm.delivery_fee_ghs || '25.00'}
+                          value={newPlaceFee}
+                          onChange={(e) => setNewPlaceFee(e.target.value)}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        className="button button-primary"
+                        onClick={handleAddDeliveryPlace}
+                      >
+                        Add Place
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Search and count of delivery places */}
+                  <div className="manage-places-toolbar">
+                    <span className="manage-places-count">
+                      Configured Places: <strong>{settingsForm.delivery_places?.length || 0}</strong>
+                    </span>
+                    <input
+                      type="search"
+                      className="manage-search"
+                      placeholder="Search delivery places…"
+                      value={placeSearch}
+                      onChange={(e) => setPlaceSearch(e.target.value)}
                     />
-                  </label>
+                  </div>
+
+                  {/* Places Table / List */}
+                  <div className="manage-places-list">
+                    {placesToDisplay.map((place) => (
+                      <div key={place.name} className="manage-place-item">
+                        <div className="manage-place-name-wrap">
+                          <span className="manage-place-icon">📍</span>
+                          <strong className="manage-place-name">{place.name}</strong>
+                        </div>
+
+                        <div className="manage-place-price-controls">
+                          <span className="manage-place-currency">GHS</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            className="manage-place-fee-input"
+                            value={place.fee_ghs}
+                            onChange={(e) => handleUpdatePlaceFee(place.name, e.target.value)}
+                          />
+                          <button
+                            type="button"
+                            className="manage-place-remove-btn"
+                            title={`Remove ${place.name}`}
+                            onClick={() => handleRemovePlace(place.name)}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+
+                    {placesToDisplay.length === 0 && (
+                      <p className="manage-empty">
+                        {placeSearch ? 'No delivery places match your search.' : 'No delivery places added yet. Add one above!'}
+                      </p>
+                    )}
+                  </div>
                 </fieldset>
 
                 <div>
                   <button type="submit" className="button button-primary" disabled={settingsSaving}>
-                    {settingsSaving ? 'Saving Changes…' : 'Save Ordering & Delivery Settings'}
+                    {settingsSaving ? 'Saving Changes…' : 'Save Delivery Places & Settings'}
                   </button>
                 </div>
               </form>

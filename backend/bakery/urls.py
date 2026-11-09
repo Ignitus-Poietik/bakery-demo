@@ -4,6 +4,7 @@ from . import views
 urlpatterns = [
     path("bootstrap/", views.bootstrap_view, name="bootstrap"),
     path("manage/login/", views.manage_login_view, name="manage_login"),
+    path("uploads/cake-image/", views.upload_cake_image_view, name="upload_cake_image"),
     path("settings/", views.settings_view, name="settings"),
     path("cakes/", views.cakes_collection_view, name="cakes_collection"),
     path("cakes/<int:cake_id>/", views.cake_detail_view, name="cake_detail"),

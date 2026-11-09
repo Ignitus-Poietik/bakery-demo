@@ -3,6 +3,7 @@ import Icon from './Icon'
 
 export default function VisitSection({ settings }) {
   const phone = (settings?.phone_number || '').replace(/\s+/g, '')
+  const whatsApp = (settings?.whatsapp_number || '').replace(/\D/g, '')
 
   return (
     <section className="visit-section section-wrap" id="visit-us" aria-labelledby="visit-title">
@@ -27,11 +28,23 @@ export default function VisitSection({ settings }) {
             <p>{settings?.opening_hours || 'Get in touch for today’s hours'}</p>
           </div>
         </div>
-        {phone && (
-          <a className="visit-contact-link" href={`tel:${phone}`}>
-            Call {settings?.phone_number}
-          </a>
-        )}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+          {phone && (
+            <a className="visit-contact-link" href={`tel:${phone}`}>
+              Call {settings?.phone_number}
+            </a>
+          )}
+          {whatsApp && (
+            <a
+              className="visit-contact-link"
+              href={`https://wa.me/${whatsApp}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              WhatsApp Us
+            </a>
+          )}
+        </div>
       </div>
     </section>
   )

@@ -1,7 +1,7 @@
 from decimal import Decimal
 import urllib.parse
 from django.contrib.auth import get_user_model
-from .models import BakerySettings, Cake, PromoSlide, DEFAULT_DELIVERY_TOWNS
+from .models import BakerySettings, Cake, PromoSlide, DEFAULT_DELIVERY_TOWNS, DEFAULT_DELIVERY_TOWN_FEES
 
 SEEDED_ADMIN_USERNAME = "admin"
 SEEDED_ADMIN_PASSWORD = "bakery2026"
@@ -201,6 +201,7 @@ def ensure_seeded():
             "pickup_enabled": True,
             "delivery_fee_ghs": Decimal("25.00"),
             "delivery_towns": list(DEFAULT_DELIVERY_TOWNS),
+            "delivery_town_fees": dict(DEFAULT_DELIVERY_TOWN_FEES),
             "paystack_public_key": "pk_test_f6de2516f0f131877c2e4f6e4c0fce3f9d85d5ff",
         },
     )
@@ -208,6 +209,12 @@ def ensure_seeded():
     if not settings_obj.delivery_towns:
         settings_obj.delivery_towns = list(DEFAULT_DELIVERY_TOWNS)
         updated_fields.append("delivery_towns")
+    if not settings_obj.delivery_town_fees:
+        settings_obj.delivery_town_fees = {
+            town: float(settings_obj.delivery_fee_ghs or 25.00)
+            for town in settings_obj.delivery_towns
+        }
+        updated_fields.append("delivery_town_fees")
     if (
         not settings_obj.paystack_public_key
         or settings_obj.paystack_public_key == "pk_test_big_bakery_patisserie_demo"

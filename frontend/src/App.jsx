@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Toaster, toast } from 'react-hot-toast'
 import CartDrawer from './components/CartDrawer'
 import CheckoutDialog from './components/CheckoutDialog'
 import ManageSitePage from './components/ManageSitePage'
@@ -59,6 +60,55 @@ export default function App() {
     }
   }, [])
 
+  // Keep customer site synchronized whenever admin updates settings/cakes in /manage-site
+  useEffect(() => {
+    function refreshStoreQuietly() {
+      fetchStoreData()
+        .then((data) => {
+          setSettings(data.settings)
+          setCakes(data.cakes || [])
+        })
+        .catch(() => {})
+    }
+
+    function onVisibilityOrFocus() {
+      if (document.visibilityState === 'visible') {
+        refreshStoreQuietly()
+      }
+    }
+
+    function onStorageChange(event) {
+      if (event.key === 'bakery_store_updated_at') {
+        refreshStoreQuietly()
+      }
+    }
+
+    window.addEventListener('focus', onVisibilityOrFocus)
+    document.addEventListener('visibilitychange', onVisibilityOrFocus)
+    window.addEventListener('storage', onStorageChange)
+
+    let channel = null
+    if (typeof window.BroadcastChannel === 'function') {
+      channel = new window.BroadcastChannel('bakery_store_sync')
+      channel.onmessage = () => refreshStoreQuietly()
+    }
+
+    return () => {
+      window.removeEventListener('focus', onVisibilityOrFocus)
+      document.removeEventListener('visibilitychange', onVisibilityOrFocus)
+      window.removeEventListener('storage', onStorageChange)
+      if (channel) channel.close()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (settings?.bakery_name) {
+      document.title = settings.tagline
+        ? `${settings.bakery_name} — ${settings.tagline}`
+        : settings.bakery_name
+    }
+  }, [settings?.bakery_name, settings?.tagline])
+
   const cartItems = useMemo(() => cart.map((item) => {
     const cake = cakes.find((entry) => entry.id === item.cake_id)
     return {
@@ -95,9 +145,14 @@ export default function App() {
     })
     setQuantities((current) => ({ ...current, [cake.id]: 1 }))
     setCartOpen(true)
+    toast.success(`Added ${quantity}× ${cake.name} to your bag`)
   }
 
   function updateCartItem(cakeId, updates) {
+    if (updates.quantity === 0) {
+      const target = cart.find((item) => item.cake_id === cakeId)
+      if (target) toast(`Removed ${target.name} from your bag`)
+    }
     setCart((current) => current
       .map((item) => item.cake_id === cakeId ? { ...item, ...updates } : item)
       .filter((item) => item.quantity > 0))
@@ -112,13 +167,43 @@ export default function App() {
     setCart([])
   }
 
+  const toasterElement = (
+    <Toaster
+      position="top-right"
+      toastOptions={{
+        duration: 3600,
+        style: {
+          background: '#23150f',
+          color: '#fbf7f0',
+          borderRadius: '10px',
+          padding: '12px 16px',
+          fontSize: '13.5px',
+          fontWeight: 500,
+          boxShadow: '0 12px 32px rgba(35, 21, 15, 0.22)',
+        },
+        success: {
+          iconTheme: {
+            primary: '#b87a38',
+            secondary: '#fbf7f0',
+          },
+        },
+      }}
+    />
+  )
+
   const pathname = typeof window !== 'undefined' ? window.location.pathname.replace(/\/+$/, '') : ''
   if (pathname === '/manage-site') {
-    return <ManageSitePage apiBase={API_BASE} onStoreUpdated={loadStore} />
+    return (
+      <>
+        {toasterElement}
+        <ManageSitePage apiBase={API_BASE} onStoreUpdated={loadStore} />
+      </>
+    )
   }
 
   return (
     <>
+      {toasterElement}
       <StorefrontPage
         settings={settings}
         orderingOpen={orderingOpen}
