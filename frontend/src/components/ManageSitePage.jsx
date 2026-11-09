@@ -599,10 +599,13 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
           </div>
 
           <form onSubmit={handleLogin} className="manage-login-form">
-            <label className="manage-field">
+            <label className="manage-field" htmlFor="manage-login-password">
               <span>Management Password</span>
               <input
+                id="manage-login-password"
+                name="password"
                 type="password"
+                autoComplete="current-password"
                 required
                 autoFocus
                 placeholder="Enter management password…"
@@ -802,9 +805,11 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                   </div>
 
                   <div className="manage-form-grid">
-                    <label className="manage-field">
+                    <label className="manage-field" htmlFor="cake-field-name">
                       <span>Cake Name *</span>
                       <input
+                        id="cake-field-name"
+                        name="name"
                         type="text"
                         required
                         value={cakeForm.name}
@@ -813,9 +818,11 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                       />
                     </label>
 
-                    <label className="manage-field">
+                    <label className="manage-field" htmlFor="cake-field-category">
                       <span>Category *</span>
                       <select
+                        id="cake-field-category"
+                        name="category"
                         value={cakeForm.category}
                         onChange={(e) => setCakeForm({ ...cakeForm, category: e.target.value })}
                       >
@@ -827,9 +834,11 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                     </label>
 
                     {cakeForm.category === '__custom__' && (
-                      <label className="manage-field">
+                      <label className="manage-field" htmlFor="cake-field-custom-category">
                         <span>New Category Name *</span>
                         <input
+                          id="cake-field-custom-category"
+                          name="customCategory"
                           type="text"
                           required
                           value={cakeForm.customCategory}
@@ -839,9 +848,11 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                       </label>
                     )}
 
-                    <label className="manage-field">
+                    <label className="manage-field" htmlFor="cake-field-price">
                       <span>Price (GHS) *</span>
                       <input
+                        id="cake-field-price"
+                        name="price_ghs"
                         type="number"
                         step="0.01"
                         min="1"
@@ -852,9 +863,11 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                       />
                     </label>
 
-                    <label className="manage-field">
+                    <label className="manage-field" htmlFor="cake-field-size">
                       <span>Size / Servings</span>
                       <input
+                        id="cake-field-size"
+                        name="weight_or_size"
                         type="text"
                         value={cakeForm.weight_or_size}
                         placeholder="8-inch Tall (12–14 slices)"
@@ -862,9 +875,11 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                       />
                     </label>
 
-                    <label className="manage-field">
+                    <label className="manage-field" htmlFor="cake-field-badge">
                       <span>Highlight Badge (optional)</span>
                       <input
+                        id="cake-field-badge"
+                        name="badge"
                         type="text"
                         value={cakeForm.badge}
                         placeholder="e.g. Bestseller, Signature, Fresh Daily"
@@ -898,8 +913,10 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                     <div className="manage-photo-input-area">
                       {cakeForm.image_mode === 'upload' ? (
                         <div className="manage-upload-dropzone">
-                          <label className="manage-file-label">
+                          <label className="manage-file-label" htmlFor="cake-field-file">
                             <input
+                              id="cake-field-file"
+                              name="cake_image_file"
                               type="file"
                               accept="image/png, image/jpeg, image/webp, image/avif, image/gif, image/svg+xml"
                               disabled={imageUploading}
@@ -916,9 +933,11 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                           )}
                         </div>
                       ) : (
-                        <label className="manage-field">
+                        <label className="manage-field" htmlFor="cake-field-image-url">
                           <span>Image URL</span>
                           <input
+                            id="cake-field-image-url"
+                            name="image_url"
                             type="url"
                             value={cakeForm.image_url}
                             placeholder="https://images.unsplash.com/photo-..."
@@ -947,9 +966,11 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                     </div>
                   </div>
 
-                  <label className="manage-field">
+                  <label className="manage-field" htmlFor="cake-field-description">
                     <span>Description</span>
                     <textarea
+                      id="cake-field-description"
+                      name="description"
                       rows={3}
                       value={cakeForm.description}
                       placeholder="Describe sponge layers, fillings, and frostings…"
@@ -957,8 +978,10 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                     />
                   </label>
 
-                  <label className="manage-checkbox">
+                  <label className="manage-checkbox" htmlFor="cake-field-available">
                     <input
+                      id="cake-field-available"
+                      name="is_available"
                       type="checkbox"
                       checked={cakeForm.is_available}
                       onChange={(e) => setCakeForm({ ...cakeForm, is_available: e.target.checked })}
@@ -995,6 +1018,8 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                   ))}
                 </div>
                 <input
+                  id="manage-cake-search"
+                  name="cake_search"
                   type="search"
                   className="manage-search"
                   placeholder="Search cakes by name or category…"
@@ -1190,8 +1215,10 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                 {/* Store Status Toggle */}
                 <fieldset className="manage-fieldset">
                   <legend>Storewide Ordering Switch</legend>
-                  <label className="manage-checkbox">
+                  <label className="manage-checkbox" htmlFor="settings-is-ordering-open">
                     <input
+                      id="settings-is-ordering-open"
+                      name="is_ordering_open"
                       type="checkbox"
                       checked={settingsForm.is_ordering_open}
                       onChange={(e) =>
@@ -1203,9 +1230,11 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                     </span>
                   </label>
 
-                  <label className="manage-field">
+                  <label className="manage-field" htmlFor="settings-closed-reason">
                     <span>Closed Banner Message (shown to customers when ordering is closed)</span>
                     <textarea
+                      id="settings-closed-reason"
+                      name="closed_reason"
                       rows={2}
                       value={settingsForm.closed_reason}
                       onChange={(e) =>
@@ -1219,8 +1248,10 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                 <fieldset className="manage-fieldset">
                   <legend>Fulfillment Options & Base Fee</legend>
                   <div className="manage-form-grid">
-                    <label className="manage-checkbox">
+                    <label className="manage-checkbox" htmlFor="settings-delivery-enabled">
                       <input
+                        id="settings-delivery-enabled"
+                        name="delivery_enabled"
                         type="checkbox"
                         checked={settingsForm.delivery_enabled}
                         onChange={(e) =>
@@ -1230,8 +1261,10 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                       <span>Enable Delivery Fulfillment</span>
                     </label>
 
-                    <label className="manage-checkbox">
+                    <label className="manage-checkbox" htmlFor="settings-pickup-enabled">
                       <input
+                        id="settings-pickup-enabled"
+                        name="pickup_enabled"
                         type="checkbox"
                         checked={settingsForm.pickup_enabled}
                         onChange={(e) =>
@@ -1241,9 +1274,11 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                       <span>Enable Store Pickup Fulfillment</span>
                     </label>
 
-                    <label className="manage-field">
+                    <label className="manage-field" htmlFor="settings-delivery-fee-ghs">
                       <span>Default / Fallback Delivery Fee (GHS)</span>
                       <input
+                        id="settings-delivery-fee-ghs"
+                        name="delivery_fee_ghs"
                         type="number"
                         step="0.01"
                         min="0"
@@ -1270,6 +1305,8 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                     <h4>+ Add Delivery Place & Price</h4>
                     <div className="manage-add-place-row">
                       <input
+                        id="manage-new-place-name"
+                        name="new_place_name"
                         type="text"
                         placeholder="Place name (e.g. East Legon, Accra)"
                         value={newPlaceName}
@@ -1278,6 +1315,8 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                       <div className="manage-price-input-wrap">
                         <span className="price-prefix">GHS</span>
                         <input
+                          id="manage-new-place-fee"
+                          name="new_place_fee"
                           type="number"
                           step="0.01"
                           min="0"
@@ -1302,6 +1341,8 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                       Configured Places: <strong>{settingsForm.delivery_places?.length || 0}</strong>
                     </span>
                     <input
+                      id="manage-place-search"
+                      name="place_search"
                       type="search"
                       className="manage-search"
                       placeholder="Search delivery places…"
@@ -1365,9 +1406,11 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                 <fieldset className="manage-fieldset">
                   <legend>Business Hours, Location & Contact Details</legend>
                   <div className="manage-form-grid">
-                    <label className="manage-field">
+                    <label className="manage-field" htmlFor="settings-bakery-name">
                       <span>Bakery Name</span>
                       <input
+                        id="settings-bakery-name"
+                        name="bakery_name"
                         type="text"
                         required
                         value={settingsForm.bakery_name}
@@ -1377,9 +1420,11 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                       />
                     </label>
 
-                    <label className="manage-field">
+                    <label className="manage-field" htmlFor="settings-tagline">
                       <span>Tagline</span>
                       <input
+                        id="settings-tagline"
+                        name="tagline"
                         type="text"
                         value={settingsForm.tagline}
                         onChange={(e) =>
@@ -1388,9 +1433,11 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                       />
                     </label>
 
-                    <label className="manage-field">
+                    <label className="manage-field" htmlFor="settings-opening-hours">
                       <span>Opening Hours</span>
                       <input
+                        id="settings-opening-hours"
+                        name="opening_hours"
                         type="text"
                         required
                         value={settingsForm.opening_hours}
@@ -1400,9 +1447,11 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                       />
                     </label>
 
-                    <label className="manage-field">
+                    <label className="manage-field" htmlFor="settings-location-address">
                       <span>Bakery Location Address</span>
                       <input
+                        id="settings-location-address"
+                        name="location_address"
                         type="text"
                         required
                         value={settingsForm.location_address}
@@ -1412,9 +1461,11 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                       />
                     </label>
 
-                    <label className="manage-field">
+                    <label className="manage-field" htmlFor="settings-phone-number">
                       <span>Phone Number</span>
                       <input
+                        id="settings-phone-number"
+                        name="phone_number"
                         type="text"
                         required
                         value={settingsForm.phone_number}
@@ -1424,9 +1475,11 @@ export default function ManageSitePage({ apiBase = '', onStoreUpdated }) {
                       />
                     </label>
 
-                    <label className="manage-field">
+                    <label className="manage-field" htmlFor="settings-whatsapp-number">
                       <span>WhatsApp Number (digits only, e.g. 233245550192)</span>
                       <input
+                        id="settings-whatsapp-number"
+                        name="whatsapp_number"
                         type="text"
                         required
                         value={settingsForm.whatsapp_number}

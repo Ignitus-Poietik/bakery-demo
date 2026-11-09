@@ -71,9 +71,11 @@ export default function CartDrawer({
                         </div>
                         <strong>{money(item.price * item.quantity)}</strong>
                       </div>
-                      <label className="cart-note">
+                      <label className="cart-note" htmlFor={`cart-note-${item.cake_id}`}>
                         <span>A note for the bakery <small>OPTIONAL</small></span>
                         <textarea
+                          id={`cart-note-${item.cake_id}`}
+                          name="item_note"
                           value={item.item_note}
                           maxLength={500}
                           placeholder="A flavour preference, message, or special request…"

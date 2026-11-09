@@ -82,7 +82,23 @@ export default function CheckoutDialog({
       setError('A cake in your bag is no longer available. Please remove it before continuing.')
       return
     }
-    if (form.fulfillment === 'delivery' && !towns.includes(form.town)) {
+
+    // Serialize form input values from the submitted form
+    const formData = new FormData(event.currentTarget)
+    const serialized = Object.fromEntries(formData.entries())
+
+    const fulfillment = serialized.fulfillment_type || form.fulfillment || 'delivery'
+    const nameMode = serialized.name_input_mode || form.nameMode || 'full'
+    const fullName = String(serialized.customer_full_name ?? form.fullName ?? '').trim()
+    const firstName = String(serialized.customer_first_name ?? form.firstName ?? '').trim()
+    const middleName = String(serialized.customer_middle_name ?? form.middleName ?? '').trim()
+    const lastName = String(serialized.customer_last_name ?? form.lastName ?? '').trim()
+    const phone = String(serialized.customer_phone ?? form.phone ?? '').trim()
+    const email = String(serialized.customer_email ?? form.email ?? '').trim()
+    const selectedTown = String(serialized.delivery_town ?? form.town ?? townQuery ?? '').trim()
+    const address = String(serialized.delivery_address ?? form.address ?? '').trim()
+
+    if (fulfillment === 'delivery' && !towns.includes(selectedTown)) {
       setError('Choose a delivery town from the suggestions.')
       return
     }
@@ -93,19 +109,20 @@ export default function CheckoutDialog({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          fulfillment_type: form.fulfillment,
-          name_input_mode: form.nameMode,
-          customer_full_name: form.fullName.trim(),
-          customer_first_name: form.firstName.trim(),
-          customer_middle_name: form.middleName.trim(),
-          customer_last_name: form.lastName.trim(),
-          customer_phone: form.phone.trim(),
-          delivery_town: form.fulfillment === 'delivery' ? form.town : '',
-          delivery_address: form.fulfillment === 'delivery' ? form.address.trim() : '',
+          fulfillment_type: fulfillment,
+          name_input_mode: nameMode,
+          customer_full_name: fullName,
+          customer_first_name: firstName,
+          customer_middle_name: middleName,
+          customer_last_name: lastName,
+          customer_phone: phone,
+          customer_email: email,
+          delivery_town: fulfillment === 'delivery' ? selectedTown : '',
+          delivery_address: fulfillment === 'delivery' ? address : '',
           items: cartItems.map((item) => ({
             cake_id: item.cake_id,
             quantity: item.quantity,
-            item_note: item.item_note.trim(),
+            item_note: (item.item_note || '').trim(),
           })),
         }),
       })
@@ -241,6 +258,9 @@ export default function CheckoutDialog({
                 <p>No account needed. Just a few details so we can get your order to you.</p>
               </div>
               <form className="checkout-form" onSubmit={submitOrder}>
+                <input type="hidden" name="name_input_mode" value={form.nameMode} />
+                <input type="hidden" name="fulfillment_type" value={form.fulfillment} />
+
                 <fieldset className="checkout-fieldset">
                   <legend>Your details</legend>
                   <div className="name-mode-toggle">
@@ -248,28 +268,72 @@ export default function CheckoutDialog({
                     <button className={form.nameMode === 'split' ? 'active' : ''} type="button" onClick={() => updateForm('nameMode', 'split')}>First & last</button>
                   </div>
                   {form.nameMode === 'full' ? (
-                    <label className="checkout-field">Full name
-                      <input autoComplete="name" required value={form.fullName} onChange={(event) => updateForm('fullName', event.target.value)} />
+                    <label className="checkout-field" htmlFor="checkout-full-name">Full name
+                      <input
+                        id="checkout-full-name"
+                        name="customer_full_name"
+                        autoComplete="name"
+                        required
+                        value={form.fullName}
+                        onChange={(event) => updateForm('fullName', event.target.value)}
+                      />
                     </label>
                   ) : (
                     <div className="checkout-name-fields">
-                      <label className="checkout-field">First name
-                        <input autoComplete="given-name" required value={form.firstName} onChange={(event) => updateForm('firstName', event.target.value)} />
+                      <label className="checkout-field" htmlFor="checkout-first-name">First name
+                        <input
+                          id="checkout-first-name"
+                          name="customer_first_name"
+                          autoComplete="given-name"
+                          required
+                          value={form.firstName}
+                          onChange={(event) => updateForm('firstName', event.target.value)}
+                        />
                       </label>
-                      <label className="checkout-field">Middle name <small>OPTIONAL</small>
-                        <input autoComplete="additional-name" value={form.middleName} onChange={(event) => updateForm('middleName', event.target.value)} />
+                      <label className="checkout-field" htmlFor="checkout-middle-name">Middle name <small>OPTIONAL</small>
+                        <input
+                          id="checkout-middle-name"
+                          name="customer_middle_name"
+                          autoComplete="additional-name"
+                          value={form.middleName}
+                          onChange={(event) => updateForm('middleName', event.target.value)}
+                        />
                       </label>
-                      <label className="checkout-field">Last name
-                        <input autoComplete="family-name" required value={form.lastName} onChange={(event) => updateForm('lastName', event.target.value)} />
+                      <label className="checkout-field" htmlFor="checkout-last-name">Last name
+                        <input
+                          id="checkout-last-name"
+                          name="customer_last_name"
+                          autoComplete="family-name"
+                          required
+                          value={form.lastName}
+                          onChange={(event) => updateForm('lastName', event.target.value)}
+                        />
                       </label>
                     </div>
                   )}
                   <div className="checkout-name-fields">
-                    <label className="checkout-field">Phone number
-                      <input autoComplete="tel" type="tel" required minLength={7} value={form.phone} onChange={(event) => updateForm('phone', event.target.value)} />
+                    <label className="checkout-field" htmlFor="checkout-phone">Phone number
+                      <input
+                        id="checkout-phone"
+                        name="customer_phone"
+                        autoComplete="tel"
+                        type="tel"
+                        required
+                        minLength={7}
+                        value={form.phone}
+                        onChange={(event) => updateForm('phone', event.target.value)}
+                      />
                     </label>
-                    <label className="checkout-field">Email for Paystack
-                      <input autoComplete="email" type="email" required value={form.email} onChange={(event) => updateForm('email', event.target.value)} />
+                    <label className="checkout-field" htmlFor="checkout-email">Email for Paystack
+                      <input
+                        id="checkout-email"
+                        name="customer_email"
+                        autoComplete="email"
+                        type="email"
+                        required
+                        value={form.email}
+                        onChange={(event) => updateForm('email', event.target.value)}
+                      />
                     </label>
                   </div>
                 </fieldset>
@@ -297,8 +361,10 @@ export default function CheckoutDialog({
                     </div>
                     {form.fulfillment === 'delivery' && (
                       <div className="delivery-fields">
-                        <label className="checkout-field town-field">Delivery town
+                        <label className="checkout-field town-field" htmlFor="checkout-town">Delivery town
                           <input
+                            id="checkout-town"
+                            name="delivery_town"
                             autoComplete="address-level2"
                             required
                             value={townQuery}
@@ -326,8 +392,16 @@ export default function CheckoutDialog({
                             </span>
                           )}
                         </label>
-                        <label className="checkout-field">Address or nearby landmark
-                          <textarea autoComplete="street-address" required rows="2" value={form.address} onChange={(event) => updateForm('address', event.target.value)} />
+                        <label className="checkout-field" htmlFor="checkout-address">Address or nearby landmark
+                          <textarea
+                            id="checkout-address"
+                            name="delivery_address"
+                            autoComplete="street-address"
+                            required
+                            rows="2"
+                            value={form.address}
+                            onChange={(event) => updateForm('address', event.target.value)}
+                          />
                         </label>
                       </div>
                     )}

@@ -64,7 +64,14 @@ export default function HelpWidget({ apiBase, onOpenBag }) {
             {loading && <p className="help-message assistant">One moment…</p>}
           </div>
           <form className="help-form" onSubmit={sendMessage}>
-            <input aria-label="Ask the bakery assistant" value={input} onChange={(event) => setInput(event.target.value)} placeholder="Ask us anything…" />
+            <input
+              id="help-chat-input"
+              name="chat_message"
+              aria-label="Ask the bakery assistant"
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              placeholder="Ask us anything…"
+            />
             <button type="submit" disabled={!input.trim() || loading} aria-label="Send message"><Icon name="arrow" size={18} /></button>
           </form>
           <p className="help-disclaimer">The assistant can guide you, but orders are placed through website checkout.</p>

@@ -92,9 +92,11 @@ export default function CakeCatalog({
             Cakes made fresh for birthdays, celebrations, and everyday moments.
           </p>
         </div>
-        <label className="cake-search">
+        <label className="cake-search" htmlFor="cake-search-input">
           <Icon name="search" size={18} />
           <input
+            id="cake-search-input"
+            name="search"
             type="search"
             placeholder="Search cakes"
             aria-label="Search cakes"
